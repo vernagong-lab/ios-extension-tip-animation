@@ -1,5 +1,8 @@
 # Extension tip 手指動畫：Lottie 規格 v1
 
+> **成品**：`lottie-output/extension_tip_finger.json`（5.7 KB）、`extension_tip_finger.lottie`（1.6 KB）。LottieFiles：Gogolook workspace，檔名 `extension_tip_finger_v1`（fileId 8925564e-e4e2-422a-9c4d-b566ac9973b8）。
+> **結構**：主 comp `extension_tip_finger`（48×42）→ precomp `hand_motion`（加 48×42 遮罩）→ group `hand`（finger／wrist／sleeve 三個 path，只有 Position 有 keyframe）。
+
 > 2026-11-20 定版。對應 prototype 設定：動畫範圍 48×42／Impulse 曲線／點擊陰影關閉／往上 6pt／兩組間隔 1 秒／1× 速度。
 > Prototype：https://vernagong-lab.github.io/ios-extension-tip-animation/#mobile
 > Figma：04_Protection → Home Extension card hint → Animation Area `16509:18327`（node 16509-18327）
@@ -74,7 +77,7 @@ Lottie keyframe 的寫法：往上段起點 keyframe `o: {x: 0.16, y: 1}`、終�
 | S+15 | 0 | 停完，往下起點（out：0.25, 1） |
 | S+25 | 6 | 落回休息位置（in：0.5, 1） |
 
-最後一個 keyframe 在第 253 格，之後維持到第 258 格。
+第 253 格落回休息位置後，第 258 格再放一個相同值的 keyframe 收尾（共 26 個 keyframe）。
 
 ## 4. 播放規則（給 RD）
 
@@ -85,7 +88,7 @@ Lottie keyframe 的寫法：往上段起點 keyframe `o: {x: 0.16, y: 1}`、終�
 | 播放前 | 顯示第 0 格（休息姿勢） |
 | hint 被關掉 | 停止並移除，不再播放 |
 | 減少動態效果 | iOS「減少動態效果」開啟時不播，只顯示第 0 格 |
-| 版面 | 放在 Figma Animation Area：hint 標題列右側，48 × 42pt。Lottie view 用 aspect fit 填滿 48 × 42 |
+| 版面 | 放在 Figma Animation Area：hint 標題列右側。尺寸以 48 × 42pt 為基準，隨螢幕尺寸等比例縮放（aspect fit，不變形） |
 
 ## 5. 驗收清單
 
