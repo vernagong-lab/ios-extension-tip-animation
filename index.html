@@ -101,20 +101,20 @@ tr.on td{background:color-mix(in srgb,var(--accent) 16%,transparent)}
         <button class="btn" data-curve="inout">Ease in-out</button>
       </div>
       <div class="row"><span class="lab">點擊陰影</span>
-        <button class="btn" data-mark="pressed" aria-pressed="true">Content/Pressed 8%</button>
+        <button class="btn" data-mark="pressed">Content/Pressed 8%</button>
         <button class="btn" data-mark="lowkey">Content/Lowkey 20%</button>
         <button class="btn" data-mark="white60">Light OP60（白 60%）</button>
         <button class="btn" data-mark="white">White 100%</button>
         <button class="btn" data-mark="green">Accent Variant 綠</button>
-        <button class="btn" data-mark="off">關閉</button>
+        <button class="btn" data-mark="off" aria-pressed="true">關閉</button>
       </div>
       <div class="row"><span class="lab">陰影消失</span>
         <button class="btn" data-vanish="squash" aria-pressed="true">擠壓變形</button>
         <button class="btn" data-vanish="shrink">縮成一條</button>
       </div>
       <div class="row"><span class="lab">往上幅度</span>
-        <button class="btn" data-amp="4" aria-pressed="true">4pt</button>
-        <button class="btn" data-amp="6">6pt</button>
+        <button class="btn" data-amp="4">4pt</button>
+        <button class="btn" data-amp="6" aria-pressed="true">6pt</button>
         <button class="btn" data-amp="8">8pt</button>
       </div>
       <div class="row"><span class="lab">兩組間隔</span>
@@ -178,7 +178,7 @@ function retime(){ TAPS_END = DELAY + SETS * SET_LEN() + (SETS - 1) * SET_GAP; T
 const PIVOT = {x:14, y:30};                   // hand svg coords: under the fingertip, at the visible bottom edge
 let jelly = false, curve = 'impulse';
 const MARK = {pressed:'rgba(38,38,38,.08)', lowkey:'rgba(38,38,38,.20)', passive:'rgba(38,38,38,.40)', white60:'rgba(246,245,245,.60)', white:'#ffffff', green:'#078E40'};
-let vanish = 'squash', mark = 'pressed', areaH = 42, amp = 4, style = 'smooth', speed = 1, t = 0, playing = false, last = 0;
+let vanish = 'squash', mark = 'off', areaH = 42, amp = 6, style = 'smooth', speed = 1, t = 0, playing = false, last = 0;
 const stages = [];
 
 function makeStage(box){
