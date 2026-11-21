@@ -1,9 +1,9 @@
-# Extension tip 手指動畫：Lottie 規格 v1
+# Extension tip 手指動畫：Lottie 規格 v1.1（Soft 曲線）
 
 > **成品**：`lottie-output/extension_tip_finger.json`（5.7 KB）、`extension_tip_finger.lottie`（1.6 KB）。LottieFiles：Gogolook workspace，檔名 `extension_tip_finger_v1`（fileId 8925564e-e4e2-422a-9c4d-b566ac9973b8）。
 > **結構**：主 comp `extension_tip_finger`（48×42）→ precomp `hand_motion`（加 48×42 遮罩）→ group `hand`（finger／wrist／sleeve 三個 path，只有 Position 有 keyframe）。
 
-> 2026-11-20 定版。對應 prototype 設定：動畫範圍 48×42／Impulse 曲線／點擊陰影關閉／往上 6pt／兩組間隔 1 秒／1× 速度。
+> 2026-11-20 定版 v1；2026-11-21 改為 v1.1：往上曲線改 Soft，避免「撞到頂」的急煞感。對應 prototype 設定：動畫範圍 48×42／Soft 曲線／點擊陰影關閉／往上 6pt／兩組間隔 1 秒／1× 速度。
 > Prototype：https://vernagong-lab.github.io/ios-extension-tip-animation/#mobile
 > Figma：04_Protection → Home Extension card hint → Animation Area `16509:18327`（node 16509-18327）
 
@@ -46,12 +46,14 @@
 
 | 段落 | 格數 | Y 值 | 曲線 |
 |---|---|---|---|
-| 往上 | 8 格 | 6 → 0 | ease-out expo：`cubic-bezier(0.16, 1, 0.3, 1)` |
-| 停在上緣 | 7 格 | 0 | 不動 |
-| 往下 | 10 格 | 0 → 6 | ease-out quart：`cubic-bezier(0.25, 1, 0.5, 1)` |
+| 往上 | 11 格 | 6 → 0 | Soft：`cubic-bezier(0.4, 0, 0.2, 1)`，起步柔和、慢慢減速貼到頂 |
+| 停在上緣 | 4 格 | 0 | 不動 |
+| 往下 | 10 格 | 0 → 6 | Soft：`cubic-bezier(0.4, 0, 0.2, 1)` |
 | 停在休息位置 | 5 格 | 6 | 不動 |
 
-Lottie keyframe 的寫法：往上段起點 keyframe `o: {x: 0.16, y: 1}`、終點 `i: {x: 0.3, y: 1}`；往下段起點 `o: {x: 0.25, y: 1}`、終點 `i: {x: 0.5, y: 1}`。
+Lottie keyframe 的寫法：往上段、往下段起點 keyframe 都是 `o: {x: 0.4, y: 0}`、`i: {x: 0.2, y: 1}`。
+
+> v1（已停用）：往上 8 格 ease-out expo `(0.16, 1, 0.3, 1)`、停 7 格、往下 10 格 ease-out quart `(0.25, 1, 0.5, 1)`。第一格就衝 3.5pt，到頂有急煞感。
 
 ### 3.2 時間軸（60fps）
 
@@ -72,10 +74,10 @@ Lottie keyframe 的寫法：往上段起點 keyframe `o: {x: 0.16, y: 1}`、終�
 
 | 格 | Y | 說明 |
 |---|---|---|
-| S | 6 | 往上起點（out：0.16, 1） |
-| S+8 | 0 | 到頂（in：0.3, 1） |
-| S+15 | 0 | 停完，往下起點（out：0.25, 1） |
-| S+25 | 6 | 落回休息位置（in：0.5, 1） |
+| S | 6 | 往上起點（Soft：out 0.4, 0／in 0.2, 1） |
+| S+11 | 0 | 到頂 |
+| S+15 | 0 | 停完，往下起點（Soft：out 0.4, 0／in 0.2, 1） |
+| S+25 | 6 | 落回休息位置 |
 
 第 253 格落回休息位置後，第 258 格再放一個相同值的 keyframe 收尾（共 26 個 keyframe）。
 
@@ -92,7 +94,7 @@ Lottie keyframe 的寫法：往上段起點 keyframe `o: {x: 0.16, y: 1}`、終�
 
 ## 5. 驗收清單
 
-- [ ] 在 LottieFiles 預覽或 lottie-ios 播放時，六下的頂點落在第 26、56、86、176、206、236 格
+- [ ] 在 LottieFiles 預覽或 lottie-ios 播放時，六下的頂點落在第 29、59、89、179、209、239 格
 - [ ] 第 0 格、最後一格跟 Figma Animation Area 的靜態畫面一致
 - [ ] 手指沒有超出 48 × 42（袖口在底緣被裁切）
 - [ ] 沒有縮放、旋轉、透明度變化，只有 Y 位移

@@ -93,7 +93,8 @@ tr.on td{background:color-mix(in srgb,var(--accent) 16%,transparent)}
         <button class="btn" data-style="step">逐格</button>
       </div>
       <div class="row"><span class="lab">位移曲線</span>
-        <button class="btn" data-curve="impulse" aria-pressed="true">Impulse</button>
+        <button class="btn" data-curve="soft" aria-pressed="true">Soft（新）</button>
+        <button class="btn" data-curve="impulse">Impulse（v1）</button>
         <button class="btn" data-curve="inout">Ease in-out</button>
       </div>
       <div class="row"><span class="lab">點擊陰影</span>
@@ -138,8 +139,8 @@ tr.on td{background:color-mix(in srgb,var(--accent) 16%,transparent)}
     <ul class="spec">
       <li><b>只播一次：</b>進到畫面後延遲 0.3 秒開始，點三下、停 1 秒、再點三下，結束停在原位。</li>
       <li id="areaNote"></li>
-      <li><b>節奏（60fps）：</b>往上點三下為一組，重複兩組，中間停 <span class="gapTxt">1</span> 秒。每下 30 格（0.5 秒）：往上 8 格、停 7 格、往下 10 格、停 5 格。全長 <span class="totalTxt">4.3</span> 秒，只播一次。</li>
-      <li><b>Impulse 曲線：</b>往上用 ease-out expo，cubic-bezier(0.16, 1, 0.3, 1)，一開始就衝很快，接近頂點時急煞；往下用 ease-out quart，cubic-bezier(0.25, 1, 0.5, 1)，迅速彈回再輕輕落定。可切回 ease in-out 比較。</li>
+      <li><b>節奏（60fps）：</b>往上點三下為一組，重複兩組，中間停 <span class="gapTxt">1</span> 秒。每下 30 格（0.5 秒）。Soft：往上 11 格、停 4 格、往下 10 格、停 5 格（Impulse v1：8／7／10／5）。全長 <span class="totalTxt">4.3</span> 秒，只播一次。</li>
+      <li><b>Soft 曲線（新）：</b>上下都用 cubic-bezier(0.4, 0, 0.2, 1)，起步柔和、接近頂點時慢慢減速停下，不會有「撞到頂」的急煞感；往上時間從 8 格拉長到 11 格。可切回 Impulse（v1）比較：往上 ease-out expo (0.16, 1, 0.3, 1)，往下 ease-out quart (0.25, 1, 0.5, 1)。</li>
       <li><b>點擊陰影：</b>寬 9pt、高 2pt。手指接近頂點時出現並跟著指尖往上，到頂點時被往上推 0.5pt 並展開到最寬；手指往下時陰影留在原地消失，可選「擠壓變形」（撞到頂點時被壓扁變寬，接著繼續壓扁淡出）或「縮成一條」。</li>
       <li>只用位移、橫向縮放和透明度，轉 Lottie 沒有相容問題。點擊陰影顏色取自 Mobile DS：Content/Pressed（#262626 8%）、Content/Lowkey（#262626 20%）、Gray/(T) Light OP60（#F6F5F5 60%）、White（#FFFFFF）、Surface/Accent Variant（#078E40）。</li>
     </ul>
@@ -167,14 +168,17 @@ let SET_GAP = 1;                            // rest between the two sets of taps
 const SET_LEN = () => CYCLE * TAPS;
 // frame-exact at 60fps (matches the Lottie spec): up 8f, hold 7f, down 10f, rest 5f = 30f per tap
 const FPS = 60;
-const UP = 8/FPS, HOLD_UP = 7/FPS, DOWN = 10/FPS; // remainder of each cycle holds at rest
+// frames per tap by curve (each tap stays 30f): soft = up 11 / hold 4 / down 10 / rest 5; impulse & in-out = 8 / 7 / 10 / 5
+const TIMING = {soft:[11,4,10], impulse:[8,7,10], inout:[8,7,10]};
+let UP = 11/FPS, HOLD_UP = 4/FPS, DOWN = 10/FPS; // remainder of each cycle holds at rest
+function applyTiming(){ const [u,h,d] = TIMING[curve]; UP = u/FPS; HOLD_UP = h/FPS; DOWN = d/FPS; }
 const MARK_W = 9, MARK_H = 2, MARK_GAP = 0.3, MARK_PUSH = 0.5; // pt
 let TAPS_END = DELAY + SETS * SET_LEN() + (SETS - 1) * SET_GAP;
 const TAIL = 0;
 let TOTAL = TAPS_END + TAIL;                  // ends at rest
 function retime(){ TAPS_END = DELAY + SETS * SET_LEN() + (SETS - 1) * SET_GAP; TOTAL = TAPS_END + TAIL; }
 const PIVOT = {x:14, y:30};                   // hand svg coords: under the fingertip, at the visible bottom edge
-let jelly = false, curve = 'impulse';
+let jelly = false, curve = 'soft';
 const MARK = {pressed:'rgba(38,38,38,.08)', lowkey:'rgba(38,38,38,.20)', passive:'rgba(38,38,38,.40)', white60:'rgba(246,245,245,.60)', white:'#ffffff', green:'#078E40'};
 let vanish = 'squash', mark = 'off', areaH = 42, amp = 6, style = 'smooth', speed = 1, t = 0, playing = false, last = 0;
 const stages = [];
@@ -207,9 +211,9 @@ function stateAt(time){
   const ts = (time - DELAY) % (SET_LEN() + SET_GAP);             // time inside the current set (+ gap)
   if (ts >= SET_LEN()) return {o:0, phase:'rest', u:0, tau: ts - SET_LEN() + (CYCLE - MOVE_END)};
   const p = ts % CYCLE;
-  if (p < UP) { const u = p/UP; return {o: curve === 'impulse' ? outExpo(u) : inOut(u), phase:'rise', u}; }
+  if (p < UP) { const u = p/UP; return {o: curve === 'impulse' ? outExpo(u) : curve === 'soft' ? softC(u) : inOut(u), phase:'rise', u}; }
   if (p < UP + HOLD_UP) return {o:1, phase:'hold', u:(p-UP)/HOLD_UP, tau:p-UP};
-  if (p < MOVE_END) { const u = (p-UP-HOLD_UP)/DOWN; return {o:1 - (curve === 'impulse' ? outQuart(u) : inOut(u)), phase:'fall', u}; }
+  if (p < MOVE_END) { const u = (p-UP-HOLD_UP)/DOWN; return {o:1 - (curve === 'impulse' ? outQuart(u) : curve === 'soft' ? softC(u) : inOut(u)), phase:'fall', u}; }
   return {o:0, phase:'rest', u:0, tau:p - MOVE_END};
 }
 // gentle overshoot (~6% of the travel) near the top, then settles exactly on the top position
@@ -225,6 +229,7 @@ function bezier(x1, y1, x2, y2){
 }
 const outExpo = bezier(0.16, 1, 0.3, 1);   // rise
 const outQuart = bezier(0.25, 1, 0.5, 1);  // fall
+const softC = bezier(0.4, 0, 0.2, 1);       // soft: gentle start, long gentle settle (no slam at the top)
 function outBack(u){ return inOut(u) + 0.06 * Math.sin(Math.PI * smoothstep(0.55, 1, u)); }
 // damped wobble: builds from 0 at impact, peaks after ~25ms, decays in ~0.25s
 const wobble = (tau, hz, decay) => Math.exp(-decay * tau) * Math.sin(2 * Math.PI * hz * tau); // starts at 0, so no jump
@@ -293,9 +298,9 @@ function buildBeats(){
     const set = Math.floor(n / TAPS), i = n % TAPS;
     const s = DELAY + set * (SET_LEN() + SET_GAP) + i*CYCLE;
     const sh = mark !== 'off';
-    rows.push([s, s+UP, `第 ${set+1} 組第 ${i+1} 下：往上 ${amp}pt（${curve === 'impulse' ? 'ease-out expo，瞬間衝上去再急煞' : 'ease in-out'}）` + (sh ? '；接近頂點時陰影出現，跟著指尖往上' : '')]);
+    rows.push([s, s+UP, `第 ${set+1} 組第 ${i+1} 下：往上 ${amp}pt（${curve === 'impulse' ? 'ease-out expo，瞬間衝上去再急煞' : curve === 'soft' ? 'cubic-bezier(0.4, 0, 0.2, 1)，起步柔和、慢慢靠近頂點' : 'ease in-out'}）` + (sh ? '；接近頂點時陰影出現，跟著指尖往上' : '')]);
     rows.push([s+UP, s+UP+HOLD_UP, '停在上緣' + (sh ? `；陰影被往上推 ${MARK_PUSH}pt、展開到 ${MARK_W}pt` + (vanish === 'squash' ? '，撞到時被壓扁（寬 125%、高 60%）' : '') : '')]);
-    rows.push([s+UP+HOLD_UP, s+UP+HOLD_UP+DOWN, `往下回到休息位置（${curve === 'impulse' ? 'ease-out quart，快速彈回再落定' : 'ease in-out'}）` + (sh ? (vanish === 'squash' ? '；陰影留在原地繼續被壓扁變寬（寬 150%、高 10%）並淡出' : '；陰影留在原地縮成一小條後消失') : '')]);
+    rows.push([s+UP+HOLD_UP, s+UP+HOLD_UP+DOWN, `往下回到休息位置（${curve === 'impulse' ? 'ease-out quart，快速彈回再落定' : curve === 'soft' ? 'cubic-bezier(0.4, 0, 0.2, 1)' : 'ease in-out'}）` + (sh ? (vanish === 'squash' ? '；陰影留在原地繼續被壓扁變寬（寬 150%、高 10%）並淡出' : '；陰影留在原地縮成一小條後消失') : '')]);
     const lastTap = n === SETS * TAPS - 1;
     rows.push([s+UP+HOLD_UP+DOWN, s+CYCLE, lastTap ? '停在休息位置，動畫結束' : '短暫停頓']);
     if (i === TAPS - 1 && !lastTap) rows.push([s+CYCLE, s+CYCLE+SET_GAP, `兩組之間停 ${SET_GAP} 秒`]);
@@ -334,7 +339,7 @@ function clampAmp(){
 function setMark(v){ mark = v; document.querySelectorAll('[data-mark]').forEach(x => x.setAttribute('aria-pressed', x.dataset.mark === v)); }
 group('area', v => { areaH = +v; clampAmp(); buildBeats(); play(0); });
 group('gap', v => { SET_GAP = +v; retime(); buildBeats(); play(0); });
-group('curve', v => { curve = v; buildBeats(); play(0); });
+group('curve', v => { curve = v; applyTiming(); buildBeats(); play(0); });
 group('vanish', v => { vanish = v; buildBeats(); play(0); });
 group('mark', v => { mark = v; clampAmp(); buildBeats(); play(0); });
 group('speed', v => { speed = +v; play(0); });
